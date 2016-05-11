@@ -1,5 +1,6 @@
 #include "HplusRun.hpp"
 #include "ttbbNLO_syst.hpp"
+#include "NNLOReweighter.hpp"
 #include "TROOT.h"
 
 using namespace std;
@@ -17,6 +18,10 @@ bool HplusRun::initialize() {
   mDS = new DSHandler(mArgv[2]);
   string XSFile = mConfig->GetCommonSetting("XSFile")[0];
   mXSHelper = new XSHelper(XSFile);
+
+  if (!(mConfig->GetCommonSetting("MAX").empty())) mMaxProcess = atol(mConfig->GetCommonSetting("MAX")[0].c_str());
+  else mMaxProcess = 0;
+  mProcessed = 0;
 
   // initialize working classes
   mMH = new MakeHists();
@@ -60,6 +65,7 @@ bool HplusRun::run() {
         *(Tools::Instance().GetTreeValue<int>(mWorker, "mcChannelNumber"));
     // Calculate norm and init ttbbRW
     ttbbNLO_syst *ttbbRW;
+    NNLOReweighter *nnloRW;
     float norm = 1.0;
     if (mcChannel != 0) {
       float totalEventsWeighted =
@@ -70,6 +76,7 @@ bool HplusRun::run() {
 
       string NormFile = mConfig->GetCommonSetting("NormFile")[0];
       string ShapeFile = mConfig->GetCommonSetting("ShapeFile")[0];
+      string NNLODir = mConfig->GetCommonSetting("NNLODir")[0];
       if (mcChannel == 410000 || mcChannel == 410009 || mcChannel == 410120 ||
           mcChannel == 410121) {
         ttbbRW = new ttbbNLO_syst("410000", NormFile, ShapeFile);
@@ -77,11 +84,19 @@ bool HplusRun::run() {
         ttbbRW = new ttbbNLO_syst(to_string(mcChannel), NormFile, ShapeFile);
       }
       ttbbRW->Init();
+      if (mcChannel == 410000 || mcChannel == 410009 || mcChannel == 410120 || mcChannel == 410121){
+      nnloRW = new NNLOReweighter(mcChannel, NNLODir);
+      nnloRW->Init();}
     }
 
     // Main loop!
     printf("Start Loop %i\n", mcChannel != 0 ? mcChannel : runNumber);
     for (long ientry = 0; ientry < nentries; ++ientry) {
+      if ((mProcessed >= mMaxProcess) && (mMaxProcess > 0))
+      {
+        printf("HplusRun:: Run:: Reach Max Process Number %ld\n", mMaxProcess);
+        break;
+      }
       mWorker->GetEntry(ientry);
       if (ientry % messageSlice == 0) {
         printf("HplusRun:: Run:: ----------Now Processing %ld of %ld in "
@@ -90,6 +105,7 @@ bool HplusRun::run() {
       }
       // Get ttbb weight
       float weight_ttbb_Nominal = 1.0;
+      float weight_NNLO = 1.0;
       if (mcChannel != 0) {
         HFSystDataMembers *ttbb = new HFSystDataMembers();
         ttbb->HF_Classification = *(
@@ -111,8 +127,18 @@ bool HplusRun::run() {
 
         weight_ttbb_Nominal =
             ttbbRW->GetttHFWeights(ttbb).at("ttbb_Nominal_weight");
+        if (mcChannel == 410000 || mcChannel == 410009 || mcChannel == 410120 || mcChannel == 410121){
+        float truth_top_pt = *(Tools::Instance().GetTreeValue<float>(mWorker, "truth_top_pt"));
+        float truth_ttbar_pt = *(Tools::Instance().GetTreeValue<float>(mWorker, "truth_ttbar_pt"));
+        weight_NNLO = nnloRW->GetTtbarAndTopPtWeight(truth_ttbar_pt, truth_top_pt);}
+
       }
-      mMH->run(mWorker, norm, weight_ttbb_Nominal, mFormulas);
+      std::map<string, float> weights;
+      weights["norm"] = norm;
+      weights["weight_NNLO"] = weight_NNLO;
+      weights["weight_ttbb_Nominal"] = weight_ttbb_Nominal;
+      mMH->run(mWorker, weights, mFormulas);
+      mProcessed++;
     }
     // Point to next DataSet!
     files = mDS->Next();

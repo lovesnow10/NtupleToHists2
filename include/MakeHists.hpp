@@ -34,7 +34,7 @@ public:
   MakeHists(){};
   virtual ~MakeHists(){};
   bool initialize(ConfigParser *config, DSHandler *ds);
-  bool run(TTree *event, float norm, float weight_ttbb_Nominal,
+  bool run(TTree *event, std::map<string, float> weights,
            TTreeFormulaContainer *formulas);
   bool finalize(TFile *fFile);
 };

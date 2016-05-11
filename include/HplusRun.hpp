@@ -38,6 +38,9 @@ private:
 
   TFile *fFile;
 
+  long mMaxProcess;
+  long mProcessed;
+
   int mArgc;
   char **mArgv;
 

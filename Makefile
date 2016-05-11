@@ -1,4 +1,4 @@
-PROGNAME      = Ntuple2Hists
+PROGNAME      = NtupleToHists2
 SRCDIR = src
 INCDIR = include
 SOURCEFILES   = $(wildcard $(SRCDIR)/*.cxx)

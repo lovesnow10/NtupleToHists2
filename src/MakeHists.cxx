@@ -9,7 +9,7 @@ bool MakeHists::initialize(ConfigParser *config, DSHandler *ds) {
   return true;
 }
 
-bool MakeHists::run(TTree *event, float norm, float weight_ttbb_Nominal,
+bool MakeHists::run(TTree *event, map<string, float> weights,
                     TTreeFormulaContainer *formulas) {
   mEvent = event;
   std::vector<string> mRegions;
@@ -27,7 +27,7 @@ bool MakeHists::run(TTree *event, float norm, float weight_ttbb_Nominal,
     isFake = true;
 
   // Get Weights!
-  float weights = Tools::Instance().GetWeight(mcChannel);
+  float mWeights = Tools::Instance().GetWeight(mcChannel);
 
   // No weight for DATA!
   if (mcChannel != 0) {
@@ -42,8 +42,8 @@ bool MakeHists::run(TTree *event, float norm, float weight_ttbb_Nominal,
     float weight_bTagSF_77 =
         *(Tools::Instance().GetTreeValue<float>(mEvent, "weight_bTagSF_77"));
 
-    weights = weights * weight_mc * weight_pileup * weight_jvt *
-              weight_leptonSF * weight_bTagSF_77 * weight_ttbb_Nominal;
+    mWeights = mWeights * weight_mc * weight_pileup * weight_jvt *
+              weight_leptonSF * weight_bTagSF_77 * weights["weight_ttbb_Nominal"] * weights["weight_NNLO"];
   }
   // Selectioins!
   for (int ientry = 0; ientry < formulas->GetEntries(); ++ientry) {
@@ -230,7 +230,7 @@ bool MakeHists::run(TTree *event, float norm, float weight_ttbb_Nominal,
   }
   for (auto region : mRegions) {
     mRawYields.at(region).at(mSample) += 1;
-    mWeightedYields.at(region).at(mSample) += (norm * weights);
+    mWeightedYields.at(region).at(mSample) += (weights["norm"] * mWeights);
     std::vector<string> vars = mConfig->GetRegionVars(region);
     for (auto var : vars) {
       float value;
@@ -274,11 +274,11 @@ bool MakeHists::run(TTree *event, float norm, float weight_ttbb_Nominal,
       }
       string hname = Tools::Instance().GenName(var, region, mSample);
       if (hs->HasHist(hname)) {
-        hs->GetHist(hname)->Fill(value, weights * norm);
+        hs->GetHist(hname)->Fill(value, mWeights * weights["norm"]);
       } else {
         std::vector<float> bins = mConfig->GetVarBinning(region, var);
         hs->AddHist(hname, bins[0], bins[1], bins[2]);
-        hs->GetHist(hname)->Fill(value, weights * norm);
+        hs->GetHist(hname)->Fill(value, mWeights * weights["norm"]);
       }
     }
   }
