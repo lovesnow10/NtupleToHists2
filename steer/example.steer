@@ -1,0 +1,7 @@
+COMMOM OUTPUT example.root
+REGION 2jex2bex
+CUT nJets==2&&nBTags==2
+VAR pT_jet1 40 0 800000
+REGION 3jex2bex
+CUT nJets==3&&nBTags==2
+VAR pT_jet1 40 0 800000
