@@ -426,3 +426,5 @@ COMMON OutName hist160425.root
 COMMON XSFile /Users/Shana/workarea/ATLASanalysis/XSection-MC15-13TeV-fromSusyGrp.data
 COMMON NormFile /Users/Shana/workarea/ATLASanalysis/Ntuple2Hists/data/ttbbNormRw.root
 COMMON ShapeFile /Users/Shana/workarea/ATLASanalysis/Ntuple2Hists/data/ttbbShapeRw.root
+COMMON NNLODir /Users/Shana/workarea/ATLASanalysis/NtupleToHists2/data/
+COMMON MAX 100

@@ -27,6 +27,9 @@ bool HplusRun::initialize() {
   mMH = new MakeHists();
   mMH->initialize(mConfig, mDS);
 
+  mPI = new PrintInfo();
+  mPI->initialize();
+
   printf("HplusRun:: initialize:: HistGen Initialization Succeeded!\n");
   return true;
 }
@@ -138,6 +141,7 @@ bool HplusRun::run() {
       weights["weight_NNLO"] = weight_NNLO;
       weights["weight_ttbb_Nominal"] = weight_ttbb_Nominal;
       mMH->run(mWorker, weights, mFormulas);
+      mPI->run(mWorker, weights, ientry);
       mProcessed++;
     }
     // Point to next DataSet!
@@ -152,6 +156,7 @@ bool HplusRun::finalize() {
 
   // finalize working classes
   mMH->finalize(fFile);
+  mPI->finalize();
 
   // Close File!
   fFile->Close();

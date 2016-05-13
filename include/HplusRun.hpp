@@ -12,6 +12,7 @@
 #include "DSHandler.hpp"
 #include "TTreeFormulaContainer.hpp"
 #include "MakeHists.hpp"
+#include "PrintInfo.hpp"
 #include "tools.hpp"
 
 #include "TChain.h"
@@ -35,6 +36,7 @@ private:
   TTreeFormulaContainer *mFormulas;
 
   MakeHists *mMH;
+  PrintInfo *mPI;
 
   TFile *fFile;
 
