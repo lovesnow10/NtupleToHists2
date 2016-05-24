@@ -19,9 +19,16 @@ bool HplusRun::initialize() {
   string XSFile = mConfig->GetCommonSetting("XSFile")[0];
   mXSHelper = new XSHelper(XSFile);
 
-  if (!(mConfig->GetCommonSetting("MAX").empty())) mMaxProcess = atol(mConfig->GetCommonSetting("MAX")[0].c_str());
-  else mMaxProcess = 0;
+  if (!(mConfig->GetCommonSetting("MAX").empty()))
+    mMaxProcess = atol(mConfig->GetCommonSetting("MAX")[0].c_str());
+  else
+    mMaxProcess = 0;
   mProcessed = 0;
+
+  if (mConfig->GetCommonSetting("TRF")[0] == "1")
+    isTRF = true;
+  else
+    isTRF = false;
 
   // initialize working classes
   mMH = new MakeHists();
@@ -56,8 +63,10 @@ bool HplusRun::run() {
     mWorker->SetNotify(mFormulas);
 
     long nentries = mWorker->GetEntries();
-    if (nentries == 0)
+    if (nentries == 0) {
+      files = mDS->Next();
       continue;
+    }
     long messageSlice = long(nentries / 6);
     if (messageSlice == 0)
       messageSlice++;
@@ -87,16 +96,17 @@ bool HplusRun::run() {
         ttbbRW = new ttbbNLO_syst(to_string(mcChannel), NormFile, ShapeFile);
       }
       ttbbRW->Init();
-      if (mcChannel == 410000 || mcChannel == 410009 || mcChannel == 410120 || mcChannel == 410121){
-      nnloRW = new NNLOReweighter(mcChannel, NNLODir);
-      nnloRW->Init();}
+      if (mcChannel == 410000 || mcChannel == 410009 || mcChannel == 410120 ||
+          mcChannel == 410121) {
+        nnloRW = new NNLOReweighter(mcChannel, NNLODir);
+        nnloRW->Init();
+      }
     }
 
     // Main loop!
     printf("Start Loop %i\n", mcChannel != 0 ? mcChannel : runNumber);
     for (long ientry = 0; ientry < nentries; ++ientry) {
-      if ((mProcessed >= mMaxProcess) && (mMaxProcess > 0))
-      {
+      if ((mProcessed >= mMaxProcess) && (mMaxProcess > 0)) {
         printf("HplusRun:: Run:: Reach Max Process Number %ld\n", mMaxProcess);
         break;
       }
@@ -130,18 +140,22 @@ bool HplusRun::run() {
 
         weight_ttbb_Nominal =
             ttbbRW->GetttHFWeights(ttbb).at("ttbb_Nominal_weight");
-        if (mcChannel == 410000 || mcChannel == 410009 || mcChannel == 410120 || mcChannel == 410121){
-        float truth_top_pt = *(Tools::Instance().GetTreeValue<float>(mWorker, "truth_top_pt"));
-        float truth_ttbar_pt = *(Tools::Instance().GetTreeValue<float>(mWorker, "truth_ttbar_pt"));
-        weight_NNLO = nnloRW->GetTtbarAndTopPtWeight(truth_ttbar_pt, truth_top_pt);}
-
+        if (mcChannel == 410000 || mcChannel == 410009 || mcChannel == 410120 ||
+            mcChannel == 410121) {
+          float truth_top_pt =
+              *(Tools::Instance().GetTreeValue<float>(mWorker, "truth_top_pt"));
+          float truth_ttbar_pt = *(
+              Tools::Instance().GetTreeValue<float>(mWorker, "truth_ttbar_pt"));
+          weight_NNLO =
+              nnloRW->GetTtbarAndTopPtWeight(truth_ttbar_pt, truth_top_pt);
+        }
       }
       std::map<string, float> weights;
       weights["norm"] = norm;
       weights["weight_NNLO"] = weight_NNLO;
       weights["weight_ttbb_Nominal"] = weight_ttbb_Nominal;
-      mMH->run(mWorker, weights, mFormulas);
-      mPI->run(mWorker, weights, ientry);
+      mMH->run(mWorker, weights, mFormulas, isTRF);
+      //      mPI->run(mWorker, weights, ientry);
       mProcessed++;
     }
     // Point to next DataSet!

@@ -26,6 +26,7 @@ private:
   //[region][sample]
   std::map<string, std::map<string, float>> mRawYields;
   std::map<string, std::map<string, float>> mWeightedYields;
+  std::vector<string> mTRFvariables;
 
   void InitYields(DSHandler *ds);
   void FillYields();
@@ -35,7 +36,7 @@ public:
   virtual ~MakeHists(){};
   bool initialize(ConfigParser *config, DSHandler *ds);
   bool run(TTree *event, std::map<string, float> weights,
-           TTreeFormulaContainer *formulas);
+           TTreeFormulaContainer *formulas, bool isTRF = false);
   bool finalize(TFile *fFile);
 };
 

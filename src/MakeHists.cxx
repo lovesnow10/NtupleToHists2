@@ -6,17 +6,21 @@ bool MakeHists::initialize(ConfigParser *config, DSHandler *ds) {
   mConfig = config;
   hs = new HistStore();
   InitYields(ds);
+  mTRFvariables.push_back("Mbb_MindR");
+  mTRFvariables.push_back("dRbb_MaxPt");
+  mTRFvariables.push_back("dRbb_MaxM");
   return true;
 }
 
 bool MakeHists::run(TTree *event, map<string, float> weights,
-                    TTreeFormulaContainer *formulas) {
+                    TTreeFormulaContainer *formulas, bool isTRF) {
   mEvent = event;
   std::vector<string> mRegions;
   mRegions.clear();
   string mSample;
   int mcChannel =
       *(Tools::Instance().GetTreeValue<int>(mEvent, "mcChannelNumber"));
+  if (mcChannel == 0 ) isTRF = false;
 
   // Fakes!
   bool isFake = false;
@@ -42,9 +46,16 @@ bool MakeHists::run(TTree *event, map<string, float> weights,
     float weight_bTagSF_77 =
         *(Tools::Instance().GetTreeValue<float>(mEvent, "weight_bTagSF_77"));
 
-    mWeights = mWeights * weight_mc * weight_pileup * weight_jvt *
-              weight_leptonSF * weight_bTagSF_77 * weights["weight_ttbb_Nominal"] * weights["weight_NNLO"];
+    if (!isTRF)
+      mWeights = mWeights * weight_mc * weight_pileup * weight_jvt *
+                 weight_leptonSF * weight_bTagSF_77 *
+                 weights["weight_ttbb_Nominal"] * weights["weight_NNLO"];
+    else
+      mWeights = mWeights * weight_mc * weight_pileup * weight_jvt *
+                 weight_leptonSF * weights["weight_ttbb_Nominal"] *
+                 weights["weight_NNLO"];
   }
+
   // Selectioins!
   for (int ientry = 0; ientry < formulas->GetEntries(); ++ientry) {
     TTreeFormula *formula = formulas->GetFormula(ientry);
@@ -55,6 +66,20 @@ bool MakeHists::run(TTree *event, map<string, float> weights,
   if (mRegions.empty())
     return false;
 
+  std::map<string, float> mTRFweights;
+  if (isTRF) {
+    mTRFweights["2bex"] =
+        *(Tools::Instance().GetTreeValue<float>(mEvent, "trf_weight_77_2ex"));
+    mTRFweights["3bex"] =
+        *(Tools::Instance().GetTreeValue<float>(mEvent, "trf_weight_77_3ex"));
+    mTRFweights["4bin"] =
+        *(Tools::Instance().GetTreeValue<float>(mEvent, "trf_weight_77_4in"));
+    std::vector<float> tmpTRFweights =
+        *(Tools::Instance().GetTreeValue<vector<float>>(mEvent,
+                                                        "trf_weight_77_in"));
+    mTRFweights["2bin"] = tmpTRFweights[2];
+    mTRFweights["3bin"] = tmpTRFweights[3];
+  }
   // Fake leptons removal
   int nEl = *(Tools::Instance().GetTreeValue<int>(mEvent, "nElectrons"));
   int nMu = *(Tools::Instance().GetTreeValue<int>(mEvent, "nMuons"));
@@ -229,6 +254,17 @@ bool MakeHists::run(TTree *event, map<string, float> weights,
     }
   }
   for (auto region : mRegions) {
+    if (isTRF) {
+      if (region.find("2bex") != string::npos) {
+        mWeights = mWeights * mTRFweights["2bex"];
+      }
+      if (region.find("3bex") != string::npos) {
+        mWeights = mWeights * mTRFweights["3bex"];
+      }
+      if (region.find("4bin") != string::npos) {
+        mWeights = mWeights * mTRFweights["4bin"];
+      }
+    }
     mRawYields.at(region).at(mSample) += 1;
     mWeightedYields.at(region).at(mSample) += (weights["norm"] * mWeights);
     std::vector<string> vars = mConfig->GetRegionVars(region);
@@ -266,10 +302,37 @@ bool MakeHists::run(TTree *event, map<string, float> weights,
         value = phi_lep2;
       else {
         string valueType = Tools::Instance().GetValueType(mEvent, var);
-        if (valueType == "int" || valueType == "Int_t") {
-          value = *(Tools::Instance().GetTreeValue<int>(mEvent, var));
+        if (!isTRF) {
+          if (valueType == "int" || valueType == "Int_t") {
+            value = *(Tools::Instance().GetTreeValue<int>(mEvent, var));
+          } else {
+            value = *(Tools::Instance().GetTreeValue<float>(mEvent, var));
+          }
         } else {
-          value = *(Tools::Instance().GetTreeValue<float>(mEvent, var));
+          if (valueType == "int" || valueType == "Int_t") {
+            value = *(Tools::Instance().GetTreeValue<int>(mEvent, var));
+          } else {
+            if (find(mTRFvariables.begin(), mTRFvariables.end(), var) !=
+                mTRFvariables.end()) {
+              if (region.find("2bex") != string::npos) {
+                string tmpVar = var + "_77_2ex";
+                value =
+                    *(Tools::Instance().GetTreeValue<float>(mEvent, tmpVar));
+              } else if (region.find("3bex") != string::npos) {
+                string tmpVar = var + "_77_3ex";
+                value =
+                    *(Tools::Instance().GetTreeValue<float>(mEvent, tmpVar));
+              } else if (region.find("4bin") != string::npos) {
+                string tmpVar = var + "_77_4in";
+                value =
+                    *(Tools::Instance().GetTreeValue<float>(mEvent, tmpVar));
+              } else {
+                value = *(Tools::Instance().GetTreeValue<float>(mEvent, var));
+              }
+            } else {
+              value = *(Tools::Instance().GetTreeValue<float>(mEvent, var));
+            }
+          }
         }
       }
       string hname = Tools::Instance().GenName(var, region, mSample);

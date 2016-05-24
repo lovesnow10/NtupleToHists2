@@ -43,6 +43,8 @@ private:
   long mMaxProcess;
   long mProcessed;
 
+  bool isTRF;
+
   int mArgc;
   char **mArgv;
 
