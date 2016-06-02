@@ -86,8 +86,12 @@ string Tools::GetSampleType(int DSID) {
   if (DSID == 341558) {
     return "Hplus2000";
   }
-  if (DSID == 410050 || (DSID >= 410066 && DSID <= 410116)) {
-    return "Others";
+  if ((DSID >= 410066 && DSID <= 410068) || (DSID >= 410073 && DSID <= 410075) || (DSID >= 410111 && DSID <= 410116)) {
+    return "ttV";
+  }
+  if (DSID == 410050)
+  {
+    return "tZ";
   }
   if (DSID == 410011 || DSID == 410012 || DSID == 410025 || DSID == 410026) {
     return "Fakes"; // SingleTop

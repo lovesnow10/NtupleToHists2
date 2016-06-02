@@ -5,10 +5,27 @@ using namespace std;
 bool MakeHists::initialize(ConfigParser *config, DSHandler *ds) {
   mConfig = config;
   hs = new HistStore();
+  calculator = new VariableCalculator();
   InitYields(ds);
   mTRFvariables.push_back("Mbb_MindR");
   mTRFvariables.push_back("dRbb_MaxPt");
   mTRFvariables.push_back("dRbb_MaxM");
+
+  mVarToCalc.push_back("pT_jet1");
+  mVarToCalc.push_back("pT_jet2");
+  mVarToCalc.push_back("eta_jet1");
+  mVarToCalc.push_back("eta_jet2");
+  mVarToCalc.push_back("phi_jet1");
+  mVarToCalc.push_back("phi_jet2");
+  mVarToCalc.push_back("pT_bJet1");
+  mVarToCalc.push_back("eta_bJet1");
+  mVarToCalc.push_back("eta_bJet1");
+  mVarToCalc.push_back("pT_lep1");
+  mVarToCalc.push_back("pT_lep2");
+  mVarToCalc.push_back("eta_lep1");
+  mVarToCalc.push_back("eta_lep2");
+  mVarToCalc.push_back("phi_lep1");
+  mVarToCalc.push_back("phi_lep2");
   return true;
 }
 
@@ -20,7 +37,8 @@ bool MakeHists::run(TTree *event, map<string, float> weights,
   string mSample;
   int mcChannel =
       *(Tools::Instance().GetTreeValue<int>(mEvent, "mcChannelNumber"));
-  if (mcChannel == 0 ) isTRF = false;
+  if (mcChannel == 0)
+    isTRF = false;
 
   // Fakes!
   bool isFake = false;
@@ -35,6 +53,17 @@ bool MakeHists::run(TTree *event, map<string, float> weights,
 
   // No weight for DATA!
   if (mcChannel != 0) {
+    if (mSample == "ttbar") {
+      int HF_Classification =
+          *(Tools::Instance().GetTreeValue<int>(mEvent, "HF_Classification"));
+      if (HF_Classification == 0)
+        mSample = "ttlight";
+      else if (abs(HF_Classification) > 0 && abs(HF_Classification) < 100)
+        mSample = "ttcc";
+      else
+        mSample = "ttbb";
+    }
+
     float weight_mc =
         *(Tools::Instance().GetTreeValue<float>(mEvent, "weight_mc"));
     float weight_pileup =
@@ -45,15 +74,24 @@ bool MakeHists::run(TTree *event, map<string, float> weights,
         *(Tools::Instance().GetTreeValue<float>(mEvent, "weight_leptonSF"));
     float weight_bTagSF_77 =
         *(Tools::Instance().GetTreeValue<float>(mEvent, "weight_bTagSF_77"));
-
-    if (!isTRF)
-      mWeights = mWeights * weight_mc * weight_pileup * weight_jvt *
-                 weight_leptonSF * weight_bTagSF_77 *
-                 weights["weight_ttbb_Nominal"] * weights["weight_NNLO"];
-    else
-      mWeights = mWeights * weight_mc * weight_pileup * weight_jvt *
-                 weight_leptonSF * weights["weight_ttbb_Nominal"] *
-                 weights["weight_NNLO"];
+    if (mSample != "ttbb") {
+      if (!isTRF)
+        mWeights = mWeights * weight_mc * weight_pileup * weight_jvt *
+                   weight_leptonSF * weight_bTagSF_77 *
+                   weights["weight_ttbb_Nominal"] * weights["weight_NNLO"];
+      else
+        mWeights = mWeights * weight_mc * weight_pileup * weight_jvt *
+                   weight_leptonSF * weights["weight_ttbb_Nominal"] *
+                   weights["weight_NNLO"];
+    } else {
+      if (!isTRF)
+        mWeights = mWeights * weight_mc * weight_pileup * weight_jvt *
+                   weight_leptonSF * weight_bTagSF_77 *
+                   weights["weight_ttbb_Nominal"];
+      else
+        mWeights = mWeights * weight_mc * weight_pileup * weight_jvt *
+                   weight_leptonSF * weights["weight_ttbb_Nominal"];
+    }
   }
 
   // Selectioins!
@@ -152,6 +190,7 @@ bool MakeHists::run(TTree *event, map<string, float> weights,
         mSample = "Fakes";
     }
     // ttbar merge
+    // ttbar merge
     int TopHeavyFlavorFilterFlag = *(Tools::Instance().GetTreeValue<int>(
         mEvent, "TopHeavyFlavorFilterFlag"));
     bool truth_top_dilep_filter = *(
@@ -166,7 +205,7 @@ bool MakeHists::run(TTree *event, map<string, float> weights,
       return false;
   }
   // Calculate Variables
-  int nJets = *(Tools::Instance().GetTreeValue<int>(mEvent, "nJets"));
+/*  int nJets = *(Tools::Instance().GetTreeValue<int>(mEvent, "nJets"));
   //  int nBTags = mEvent->GetValue<int>("nBTags");
   if (mSample == "ttbar") {
     int HF_Classification =
@@ -252,7 +291,8 @@ bool MakeHists::run(TTree *event, map<string, float> weights,
       phi_lep1 = mu_phi.at(0);
       phi_lep2 = el_phi.at(0);
     }
-  }
+  }*/
+  calculator->CalculateVariables(mEvent);
   for (auto region : mRegions) {
     if (isTRF) {
       if (region.find("2bex") != string::npos) {
@@ -270,7 +310,7 @@ bool MakeHists::run(TTree *event, map<string, float> weights,
     std::vector<string> vars = mConfig->GetRegionVars(region);
     for (auto var : vars) {
       float value;
-      if (var == "pT_jet1")
+/*      if (var == "pT_jet1")
         value = pT_jet1;
       else if (var == "pT_jet2")
         value = pT_jet2;
@@ -299,7 +339,11 @@ bool MakeHists::run(TTree *event, map<string, float> weights,
       else if (var == "phi_lep1")
         value = phi_lep1;
       else if (var == "phi_lep2")
-        value = phi_lep2;
+        value = phi_lep2;*/
+      if (find(mVarToCalc.begin(), mVarToCalc.end(), var) != mVarToCalc.end())
+      {
+        value = calculator->GetVarValue(var);
+      }
       else {
         string valueType = Tools::Instance().GetValueType(mEvent, var);
         if (!isTRF) {

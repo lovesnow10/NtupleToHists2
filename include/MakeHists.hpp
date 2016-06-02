@@ -6,6 +6,7 @@
 #include "ttbbNLO_syst.hpp"
 #include "TTreeFormulaContainer.hpp"
 #include "DSHandler.hpp"
+#include "VariableCalculator.hpp"
 
 #include "TFile.h"
 
@@ -22,11 +23,13 @@ private:
   TTree *mEvent;
   ConfigParser *mConfig;
   HistStore *hs;
+  VariableCalculator *calculator;
 
   //[region][sample]
   std::map<string, std::map<string, float>> mRawYields;
   std::map<string, std::map<string, float>> mWeightedYields;
   std::vector<string> mTRFvariables;
+  std::vector<string> mVarToCalc;
 
   void InitYields(DSHandler *ds);
   void FillYields();
