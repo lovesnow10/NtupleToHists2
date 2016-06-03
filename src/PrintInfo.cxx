@@ -9,7 +9,7 @@ bool PrintInfo::initialize() {
   string tmpName("Info");
   tmpName.append(buf);
   tmpName.append(".log");
-  mOut = ofstream(tmpName.c_str());
+  mOut.open(tmpName.c_str());
   return true;
 }
 

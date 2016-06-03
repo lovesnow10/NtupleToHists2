@@ -39,7 +39,7 @@ public:
   virtual ~MakeHists(){};
   bool initialize(ConfigParser *config, DSHandler *ds);
   bool run(TTree *event, std::map<string, float> weights,
-           TTreeFormulaContainer *formulas, bool isTRF = false);
+           TTreeFormulaContainer *formulas, std::map<string, bool> bControls);
   bool finalize(TFile *fFile);
 };
 

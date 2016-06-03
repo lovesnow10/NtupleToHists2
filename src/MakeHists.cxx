@@ -19,7 +19,7 @@ bool MakeHists::initialize(ConfigParser *config, DSHandler *ds) {
   mVarToCalc.push_back("phi_jet2");
   mVarToCalc.push_back("pT_bJet1");
   mVarToCalc.push_back("eta_bJet1");
-  mVarToCalc.push_back("eta_bJet1");
+  mVarToCalc.push_back("phi_bJet1");
   mVarToCalc.push_back("pT_lep1");
   mVarToCalc.push_back("pT_lep2");
   mVarToCalc.push_back("eta_lep1");
@@ -30,11 +30,14 @@ bool MakeHists::initialize(ConfigParser *config, DSHandler *ds) {
 }
 
 bool MakeHists::run(TTree *event, map<string, float> weights,
-                    TTreeFormulaContainer *formulas, bool isTRF) {
+                    TTreeFormulaContainer *formulas, std::map<string, bool> bControl) {
   mEvent = event;
   std::vector<string> mRegions;
   mRegions.clear();
   string mSample;
+  bool isTRF = bControl.at("isTRF");
+  bool doTTbarMerge = bControl.at("doTTbarMerge");
+//  bool doHFSplit = bControl.at("doHFSplit");
   int mcChannel =
       *(Tools::Instance().GetTreeValue<int>(mEvent, "mcChannelNumber"));
   if (mcChannel == 0)
@@ -53,6 +56,7 @@ bool MakeHists::run(TTree *event, map<string, float> weights,
 
   // No weight for DATA!
   if (mcChannel != 0) {
+    if (doTTbarMerge){
     if (mSample == "ttbar") {
       int HF_Classification =
           *(Tools::Instance().GetTreeValue<int>(mEvent, "HF_Classification"));
@@ -62,7 +66,7 @@ bool MakeHists::run(TTree *event, map<string, float> weights,
         mSample = "ttcc";
       else
         mSample = "ttbb";
-    }
+    }}
 
     float weight_mc =
         *(Tools::Instance().GetTreeValue<float>(mEvent, "weight_mc"));

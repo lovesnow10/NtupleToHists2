@@ -26,9 +26,19 @@ bool HplusRun::initialize() {
   mProcessed = 0;
 
   if (mConfig->GetCommonSetting("TRF")[0] == "1")
-    isTRF = true;
+    bControl["isTRF"] = true;
   else
-    isTRF = false;
+    bControl["isTRF"] = false;
+
+  if (mConfig->GetCommonSetting("TTbarMerge")[0] == "1")
+    bControl["doTTbarMerge"] = true;
+  else
+    bControl["doTTbarMerge"] = false;
+
+  if (mConfig->GetCommonSetting("HFSplit")[0] == "1")
+    bControl["doHFSplit"] = true;
+  else
+    bControl["doHFSplit"] = false;
 
   // initialize working classes
   mMH = new MakeHists();
@@ -154,7 +164,7 @@ bool HplusRun::run() {
       weights["norm"] = norm;
       weights["weight_NNLO"] = weight_NNLO;
       weights["weight_ttbb_Nominal"] = weight_ttbb_Nominal;
-      mMH->run(mWorker, weights, mFormulas, isTRF);
+      mMH->run(mWorker, weights, mFormulas, bControl);
       //      mPI->run(mWorker, weights, ientry);
       mProcessed++;
     }

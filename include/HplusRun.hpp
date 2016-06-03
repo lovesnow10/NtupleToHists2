@@ -43,7 +43,7 @@ private:
   long mMaxProcess;
   long mProcessed;
 
-  bool isTRF;
+  std::map<string, bool> bControl;
 
   int mArgc;
   char **mArgv;
