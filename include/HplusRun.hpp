@@ -45,6 +45,9 @@ private:
 
   std::map<string, bool> bControl;
 
+  string mMCTree;
+  string mDTTree;
+
   int mArgc;
   char **mArgv;
 

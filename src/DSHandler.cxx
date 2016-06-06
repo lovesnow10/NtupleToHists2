@@ -17,6 +17,7 @@ DSHandler::DSHandler(string InputTxt) {
   mSampleTypesVec.clear();
   mSampleTypesVec.push_back("Fakes");
   string line;
+  int tmpID = 0;
   while (getline(in, line)) {
     mPathsVec.push_back(line);
     string ID = GetSampleID(line);
@@ -31,6 +32,7 @@ DSHandler::DSHandler(string InputTxt) {
           mSampleTypesVec.end()) {
         mSampleTypesVec.push_back(tmpType);
       }
+      mSampleTypeMap[tmpID++] = tmpType;
     }
   }
   this->Initialize();

@@ -12,7 +12,7 @@ bool HplusRun::initialize() {
     printf("HistGen:: initialize:: Given args %i Are Not Enough!", mArgc);
     return false;
   }
-  mWorker = new TChain("nominal");
+  mWorker = new TChain();
   mHelpWorker = new TChain("sumWeights");
   mConfig = new ConfigParser(mArgv[1]);
   mDS = new DSHandler(mArgv[2]);
@@ -40,6 +40,9 @@ bool HplusRun::initialize() {
   else
     bControl["doHFSplit"] = false;
 
+  mMCTree = mConfig->GetCommonSetting("MCTree")[0];
+  mDTTree = mConfig->GetCommonSetting("DTTree")[0];
+
   // initialize working classes
   mMH = new MakeHists();
   mMH->initialize(mConfig, mDS);
@@ -55,6 +58,11 @@ bool HplusRun::run() {
   std::vector<string> files = mDS->Next();
   while (!files.empty()) {
     // Init general objs
+    string tmpSampleType = mDS->GetSampleType(mDS->GetSampleIndex());
+    if (tmpSampleType != "DATA")
+      mWorker->SetName(mMCTree.c_str());
+    else
+      mWorker->SetName(mDTTree.c_str());
     mWorker->Reset();
     mHelpWorker->Reset();
     for (auto file : files) {
