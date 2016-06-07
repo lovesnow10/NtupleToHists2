@@ -58,13 +58,13 @@ bool HplusRun::run() {
   std::vector<string> files = mDS->Next();
   while (!files.empty()) {
     // Init general objs
+    mWorker->Reset();
+    mHelpWorker->Reset();
     string tmpSampleType = mDS->GetSampleType(mDS->GetSampleIndex());
     if (tmpSampleType != "DATA")
       mWorker->SetName(mMCTree.c_str());
     else
       mWorker->SetName(mDTTree.c_str());
-    mWorker->Reset();
-    mHelpWorker->Reset();
     for (auto file : files) {
       mWorker->Add(file.c_str());
       mHelpWorker->Add(file.c_str());
