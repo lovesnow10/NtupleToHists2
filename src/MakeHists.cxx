@@ -30,14 +30,15 @@ bool MakeHists::initialize(ConfigParser *config, DSHandler *ds) {
 }
 
 bool MakeHists::run(TTree *event, map<string, float> weights,
-                    TTreeFormulaContainer *formulas, std::map<string, bool> bControl) {
+                    TTreeFormulaContainer *formulas,
+                    std::map<string, bool> bControl) {
   mEvent = event;
   std::vector<string> mRegions;
   mRegions.clear();
   string mSample;
   bool isTRF = bControl.at("isTRF");
   bool doTTbarMerge = bControl.at("doTTbarMerge");
-//  bool doHFSplit = bControl.at("doHFSplit");
+  //  bool doHFSplit = bControl.at("doHFSplit");
   int mcChannel =
       *(Tools::Instance().GetTreeValue<int>(mEvent, "mcChannelNumber"));
   if (mcChannel == 0)
@@ -56,7 +57,6 @@ bool MakeHists::run(TTree *event, map<string, float> weights,
 
   // No weight for DATA!
   if (mcChannel != 0) {
-    if (doTTbarMerge){
     if (mSample == "ttbar") {
       int HF_Classification =
           *(Tools::Instance().GetTreeValue<int>(mEvent, "HF_Classification"));
@@ -66,7 +66,7 @@ bool MakeHists::run(TTree *event, map<string, float> weights,
         mSample = "ttcc";
       else
         mSample = "ttbb";
-    }}
+    }
 
     float weight_mc =
         *(Tools::Instance().GetTreeValue<float>(mEvent, "weight_mc"));
@@ -194,108 +194,112 @@ bool MakeHists::run(TTree *event, map<string, float> weights,
         mSample = "Fakes";
     }
     // ttbar merge
-    // ttbar merge
-    int TopHeavyFlavorFilterFlag = *(Tools::Instance().GetTreeValue<int>(
-        mEvent, "TopHeavyFlavorFilterFlag"));
-    bool truth_top_dilep_filter = *(
-        Tools::Instance().GetTreeValue<bool>(mEvent, "truth_top_dilep_filter"));
+    if (doTTbarMerge) {
+      int TopHeavyFlavorFilterFlag = *(Tools::Instance().GetTreeValue<int>(
+          mEvent, "TopHeavyFlavorFilterFlag"));
+      bool truth_top_dilep_filter = *(Tools::Instance().GetTreeValue<bool>(
+          mEvent, "truth_top_dilep_filter"));
 
-    if (mcChannel == 410000 &&
-        (TopHeavyFlavorFilterFlag == 5 || truth_top_dilep_filter == true))
-      return false;
-    if (mcChannel == 410120 && truth_top_dilep_filter == true)
-      return false;
-    if (mcChannel == 410009 && TopHeavyFlavorFilterFlag == 5)
-      return false;
+      if (mcChannel == 410000 &&
+          (TopHeavyFlavorFilterFlag == 5 || truth_top_dilep_filter == true))
+        return false;
+      if (mcChannel == 410120 && truth_top_dilep_filter == true)
+        return false;
+      if (mcChannel == 410009 && TopHeavyFlavorFilterFlag == 5)
+        return false;
+    }
   }
   // Calculate Variables
-/*  int nJets = *(Tools::Instance().GetTreeValue<int>(mEvent, "nJets"));
-  //  int nBTags = mEvent->GetValue<int>("nBTags");
-  if (mSample == "ttbar") {
-    int HF_Classification =
-        *(Tools::Instance().GetTreeValue<int>(mEvent, "HF_Classification"));
-    if (HF_Classification == 0)
-      mSample = "ttlight";
-    else if (abs(HF_Classification) > 0 && abs(HF_Classification) < 100)
-      mSample = "ttcc";
-    else
-      mSample = "ttbb";
-  }
-
-  float pT_jet1, pT_jet2, pT_bJet1, pT_lep1, pT_lep2;
-  float eta_jet1, eta_jet2, eta_bJet1, eta_lep1, eta_lep2;
-  float phi_jet1, phi_jet2, phi_bJet1, phi_lep1, phi_lep2;
-
-  std::vector<float> jet_pt =
-      *(Tools::Instance().GetTreeValue<std::vector<float>>(mEvent, "jet_pt"));
-  std::vector<float> jet_eta =
-      *(Tools::Instance().GetTreeValue<std::vector<float>>(mEvent, "jet_eta"));
-  std::vector<float> jet_phi =
-      *(Tools::Instance().GetTreeValue<std::vector<float>>(mEvent, "jet_phi"));
-  std::vector<float> jet_mv2c20 = *(
-      Tools::Instance().GetTreeValue<std::vector<float>>(mEvent, "jet_mv2c20"));
-  std::vector<float> el_pt =
-      *(Tools::Instance().GetTreeValue<std::vector<float>>(mEvent, "el_pt"));
-  std::vector<float> el_eta =
-      *(Tools::Instance().GetTreeValue<std::vector<float>>(mEvent, "el_eta"));
-  std::vector<float> el_phi =
-      *(Tools::Instance().GetTreeValue<std::vector<float>>(mEvent, "el_phi"));
-  std::vector<float> mu_pt =
-      *(Tools::Instance().GetTreeValue<std::vector<float>>(mEvent, "mu_pt"));
-  std::vector<float> mu_eta =
-      *(Tools::Instance().GetTreeValue<std::vector<float>>(mEvent, "mu_eta"));
-  std::vector<float> mu_phi =
-      *(Tools::Instance().GetTreeValue<std::vector<float>>(mEvent, "mu_phi"));
-
-  pT_jet1 = jet_pt.at(0);
-  pT_jet2 = jet_pt.at(1);
-  eta_jet1 = jet_eta.at(0);
-  eta_jet2 = jet_eta.at(1);
-  phi_jet1 = jet_phi.at(0);
-  phi_jet2 = jet_phi.at(1);
-  for (int i = 0; i < nJets; i++) {
-    float mv2c20 = jet_mv2c20.at(i);
-    if (mv2c20 > -0.4434) {
-      pT_bJet1 = jet_pt.at(i);
-      eta_bJet1 = jet_eta.at(i);
-      phi_bJet1 = jet_phi.at(i);
-      break;
+  /*  int nJets = *(Tools::Instance().GetTreeValue<int>(mEvent, "nJets"));
+    //  int nBTags = mEvent->GetValue<int>("nBTags");
+    if (mSample == "ttbar") {
+      int HF_Classification =
+          *(Tools::Instance().GetTreeValue<int>(mEvent, "HF_Classification"));
+      if (HF_Classification == 0)
+        mSample = "ttlight";
+      else if (abs(HF_Classification) > 0 && abs(HF_Classification) < 100)
+        mSample = "ttcc";
+      else
+        mSample = "ttbb";
     }
-  }
-  // Setup leptons
-  if (nEl == 2 && nMu == 0) {
-    pT_lep1 = el_pt.at(0);
-    pT_lep2 = el_pt.at(1);
-    eta_lep1 = el_eta.at(0);
-    eta_lep2 = el_eta.at(1);
-    phi_lep1 = el_phi.at(0);
-    phi_lep2 = el_phi.at(1);
-  } else if (nEl == 0 && nMu == 2) {
-    pT_lep1 = mu_pt.at(0);
-    pT_lep2 = mu_pt.at(1);
-    eta_lep1 = mu_eta.at(0);
-    eta_lep2 = mu_eta.at(1);
-    phi_lep1 = mu_phi.at(0);
-    phi_lep2 = mu_phi.at(1);
-  } else if (nEl == 1 && nMu == 1) {
-    float ept = el_pt.at(0);
-    float mpt = mu_pt.at(0);
-    if (ept > mpt) {
+
+    float pT_jet1, pT_jet2, pT_bJet1, pT_lep1, pT_lep2;
+    float eta_jet1, eta_jet2, eta_bJet1, eta_lep1, eta_lep2;
+    float phi_jet1, phi_jet2, phi_bJet1, phi_lep1, phi_lep2;
+
+    std::vector<float> jet_pt =
+        *(Tools::Instance().GetTreeValue<std::vector<float>>(mEvent, "jet_pt"));
+    std::vector<float> jet_eta =
+        *(Tools::Instance().GetTreeValue<std::vector<float>>(mEvent,
+    "jet_eta"));
+    std::vector<float> jet_phi =
+        *(Tools::Instance().GetTreeValue<std::vector<float>>(mEvent,
+    "jet_phi"));
+    std::vector<float> jet_mv2c20 = *(
+        Tools::Instance().GetTreeValue<std::vector<float>>(mEvent,
+    "jet_mv2c20"));
+    std::vector<float> el_pt =
+        *(Tools::Instance().GetTreeValue<std::vector<float>>(mEvent, "el_pt"));
+    std::vector<float> el_eta =
+        *(Tools::Instance().GetTreeValue<std::vector<float>>(mEvent, "el_eta"));
+    std::vector<float> el_phi =
+        *(Tools::Instance().GetTreeValue<std::vector<float>>(mEvent, "el_phi"));
+    std::vector<float> mu_pt =
+        *(Tools::Instance().GetTreeValue<std::vector<float>>(mEvent, "mu_pt"));
+    std::vector<float> mu_eta =
+        *(Tools::Instance().GetTreeValue<std::vector<float>>(mEvent, "mu_eta"));
+    std::vector<float> mu_phi =
+        *(Tools::Instance().GetTreeValue<std::vector<float>>(mEvent, "mu_phi"));
+
+    pT_jet1 = jet_pt.at(0);
+    pT_jet2 = jet_pt.at(1);
+    eta_jet1 = jet_eta.at(0);
+    eta_jet2 = jet_eta.at(1);
+    phi_jet1 = jet_phi.at(0);
+    phi_jet2 = jet_phi.at(1);
+    for (int i = 0; i < nJets; i++) {
+      float mv2c20 = jet_mv2c20.at(i);
+      if (mv2c20 > -0.4434) {
+        pT_bJet1 = jet_pt.at(i);
+        eta_bJet1 = jet_eta.at(i);
+        phi_bJet1 = jet_phi.at(i);
+        break;
+      }
+    }
+    // Setup leptons
+    if (nEl == 2 && nMu == 0) {
       pT_lep1 = el_pt.at(0);
-      pT_lep2 = mu_pt.at(0);
+      pT_lep2 = el_pt.at(1);
       eta_lep1 = el_eta.at(0);
-      eta_lep2 = mu_eta.at(0);
+      eta_lep2 = el_eta.at(1);
       phi_lep1 = el_phi.at(0);
-      phi_lep2 = mu_eta.at(0);
-    } else {
+      phi_lep2 = el_phi.at(1);
+    } else if (nEl == 0 && nMu == 2) {
       pT_lep1 = mu_pt.at(0);
-      pT_lep2 = el_pt.at(0);
+      pT_lep2 = mu_pt.at(1);
       eta_lep1 = mu_eta.at(0);
-      eta_lep2 = el_eta.at(0);
+      eta_lep2 = mu_eta.at(1);
       phi_lep1 = mu_phi.at(0);
-      phi_lep2 = el_phi.at(0);
-    }
-  }*/
+      phi_lep2 = mu_phi.at(1);
+    } else if (nEl == 1 && nMu == 1) {
+      float ept = el_pt.at(0);
+      float mpt = mu_pt.at(0);
+      if (ept > mpt) {
+        pT_lep1 = el_pt.at(0);
+        pT_lep2 = mu_pt.at(0);
+        eta_lep1 = el_eta.at(0);
+        eta_lep2 = mu_eta.at(0);
+        phi_lep1 = el_phi.at(0);
+        phi_lep2 = mu_eta.at(0);
+      } else {
+        pT_lep1 = mu_pt.at(0);
+        pT_lep2 = el_pt.at(0);
+        eta_lep1 = mu_eta.at(0);
+        eta_lep2 = el_eta.at(0);
+        phi_lep1 = mu_phi.at(0);
+        phi_lep2 = el_phi.at(0);
+      }
+    }*/
   calculator->CalculateVariables(mEvent);
   for (auto region : mRegions) {
     if (isTRF) {
@@ -314,41 +318,39 @@ bool MakeHists::run(TTree *event, map<string, float> weights,
     std::vector<string> vars = mConfig->GetRegionVars(region);
     for (auto var : vars) {
       float value;
-/*      if (var == "pT_jet1")
-        value = pT_jet1;
-      else if (var == "pT_jet2")
-        value = pT_jet2;
-      else if (var == "eta_jet1")
-        value = eta_jet1;
-      else if (var == "eta_jet2")
-        value = eta_jet2;
-      else if (var == "phi_jet1")
-        value = phi_jet1;
-      else if (var == "phi_jet2")
-        value = phi_jet2;
-      else if (var == "pT_bJet1")
-        value = pT_bJet1;
-      else if (var == "eta_bJet1")
-        value = eta_bJet1;
-      else if (var == "phi_bJet1")
-        value = phi_bJet1;
-      else if (var == "pT_lep1")
-        value = pT_lep1;
-      else if (var == "pT_lep2")
-        value = pT_lep2;
-      else if (var == "eta_lep1")
-        value = eta_lep1;
-      else if (var == "eta_lep2")
-        value = eta_lep2;
-      else if (var == "phi_lep1")
-        value = phi_lep1;
-      else if (var == "phi_lep2")
-        value = phi_lep2;*/
-      if (find(mVarToCalc.begin(), mVarToCalc.end(), var) != mVarToCalc.end())
-      {
+      /*      if (var == "pT_jet1")
+              value = pT_jet1;
+            else if (var == "pT_jet2")
+              value = pT_jet2;
+            else if (var == "eta_jet1")
+              value = eta_jet1;
+            else if (var == "eta_jet2")
+              value = eta_jet2;
+            else if (var == "phi_jet1")
+              value = phi_jet1;
+            else if (var == "phi_jet2")
+              value = phi_jet2;
+            else if (var == "pT_bJet1")
+              value = pT_bJet1;
+            else if (var == "eta_bJet1")
+              value = eta_bJet1;
+            else if (var == "phi_bJet1")
+              value = phi_bJet1;
+            else if (var == "pT_lep1")
+              value = pT_lep1;
+            else if (var == "pT_lep2")
+              value = pT_lep2;
+            else if (var == "eta_lep1")
+              value = eta_lep1;
+            else if (var == "eta_lep2")
+              value = eta_lep2;
+            else if (var == "phi_lep1")
+              value = phi_lep1;
+            else if (var == "phi_lep2")
+              value = phi_lep2;*/
+      if (find(mVarToCalc.begin(), mVarToCalc.end(), var) != mVarToCalc.end()) {
         value = calculator->GetVarValue(var);
-      }
-      else {
+      } else {
         string valueType = Tools::Instance().GetValueType(mEvent, var);
         if (!isTRF) {
           if (valueType == "int" || valueType == "Int_t") {
