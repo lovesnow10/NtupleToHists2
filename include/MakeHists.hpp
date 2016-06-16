@@ -28,6 +28,7 @@ private:
   //[region][sample]
   std::map<string, std::map<string, float>> mRawYields;
   std::map<string, std::map<string, float>> mWeightedYields;
+  std::map<string, std::map<string, float>> mWeightedYieldsError;
   std::vector<string> mTRFvariables;
   std::vector<string> mVarToCalc;
 

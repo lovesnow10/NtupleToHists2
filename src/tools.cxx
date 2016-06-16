@@ -9,6 +9,17 @@ string Tools::GenName(string VarName, string Region, string Sample) {
   return hname;
 }
 
+string Tools::GetDataYear(int runNumber)
+{
+  if (runNumber >= 296939)
+  {
+    return "DATA16";
+  }
+  else{
+    return "DATA15";
+  }
+}
+
 string Tools::GetSampleType(int DSID) {
   if (DSID == 0) {
     return "DATA";

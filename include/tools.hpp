@@ -27,6 +27,7 @@ public:
   float GetWeight(int DSID);
   string GetSampleType(int DSID);
   std::vector<string> GrabRootFiles(string path);
+  string GetDataYear(int runNumber);
 
   template <typename T> T *GetTreeValue(TTree *fTree, string fVar) {
     T *fValue = 0x0;

@@ -1,4 +1,5 @@
 #include "MakeHists.hpp"
+#include "TMath.h"
 
 using namespace std;
 
@@ -46,7 +47,13 @@ bool MakeHists::run(TTree *event, map<string, float> weights,
 
   // Fakes!
   bool isFake = false;
-  mSample = Tools::Instance().GetSampleType(mcChannel);
+  if (mcChannel==0 && mConfig->GetCommonSetting("DataSplit")[0] == "1")
+  {
+    int runNumber = *(Tools::Instance().GetTreeValue<int>(mEvent, "runNumber"));
+    mSample = Tools::Instance().GetDataYear(runNumber);
+  }
+  else {
+  mSample = Tools::Instance().GetSampleType(mcChannel);}
   if (mcChannel == 0)
     isFake = false;
   if (mSample == "Fakes")
@@ -228,6 +235,7 @@ bool MakeHists::run(TTree *event, map<string, float> weights,
     }
     mRawYields.at(region).at(mSample) += 1;
     mWeightedYields.at(region).at(mSample) += (weights["norm"] * mWeights);
+    mWeightedYieldsError.at(region).at(mSample) += (weights["norm"] * mWeights) * (weights["norm"] * mWeights);
     std::vector<string> vars = mConfig->GetRegionVars(region);
     for (auto var : vars) {
       float value;
@@ -293,29 +301,40 @@ void MakeHists::InitYields(DSHandler *ds) {
   std::vector<string> samples = ds->GetAllTypes();
   int nSamples = samples.size();
   int nRegions = regions.size();
-  if (find(samples.begin(), samples.end(), "ttbar") == samples.end()) {
-    hs->AddHist2D("hist_raw_yields", nSamples, 0, nSamples, nRegions, 0,
-                  nRegions);
-    hs->AddHist2D("hist_weighted_yields", nSamples, 0, nSamples, nRegions, 0,
-                  nRegions);
-  } else {
-    hs->AddHist2D("hist_raw_yields", nSamples + 2, 0, nSamples + 2, nRegions, 0,
-                  nRegions);
-    hs->AddHist2D("hist_weighted_yields", nSamples + 2, 0, nSamples + 2,
-                  nRegions, 0, nRegions);
+  if (!(find(samples.begin(), samples.end(), "ttbar") == samples.end())) {
+    nSamples += 2;
+  } else if (mConfig->GetCommonSetting("DataSplit")[0] == "1") {
+    nSamples += 1;
   }
+  hs->AddHist2D("hist_raw_yields", nSamples, 0, nSamples, nRegions, 0,
+                nRegions);
+  hs->AddHist2D("hist_weighted_yields", nSamples, 0, nSamples, nRegions, 0,
+                nRegions);
   for (auto region : regions) {
     for (auto sample : samples) {
-      if (sample != "ttbar") {
-        mRawYields[region][sample] = 0;
-        mWeightedYields[region][sample] = 0;
-      } else {
+      if (sample == "ttbar") {
         mRawYields[region]["ttlight"] = 0;
         mWeightedYields[region]["ttlight"] = 0;
+        mWeightedYieldsError[region]["ttlight"] = 0;
         mRawYields[region]["ttcc"] = 0;
         mWeightedYields[region]["ttcc"] = 0;
+        mWeightedYieldsError[region]["ttcc"] = 0;
         mRawYields[region]["ttbb"] = 0;
         mWeightedYields[region]["ttbb"] = 0;
+        mWeightedYieldsError[region]["ttbb"] = 0;
+      } else if (sample == "DATA" && mConfig->GetCommonSetting("DataSplit")[0] == "1")
+      {
+        mRawYields[region]["DATA15"] = 0;
+        mRawYields[region]["DATA16"] = 0;
+        mWeightedYieldsError[region]["DATA15"] = 0;
+        mWeightedYields[region]["DATA15"] = 0;
+        mWeightedYields[region]["DATA16"] = 0;
+        mWeightedYieldsError[region]["DATA16"] = 0;
+      }
+      else {
+        mRawYields[region][sample] = 0;
+        mWeightedYields[region][sample] = 0;
+        mWeightedYieldsError[region][sample] = 0;
       }
     }
   }
@@ -364,11 +383,13 @@ void MakeHists::FillYields() {
           hs->GetHist2D("hist_raw_yields")->GetYaxis()->GetBinLabel(iy);
       string tmpName = yname + "_" + xname;
       printf("HistsGen:: FillYields:: Filling Yields %s\n", tmpName.c_str());
-      float raw, weighted;
+      float raw, weighted, weighted_error;
       raw = mRawYields.at(yname).at(xname);
       weighted = mWeightedYields.at(yname).at(xname);
+      weighted_error = mWeightedYieldsError.at(yname).at(xname);
       hs->GetHist2D("hist_raw_yields")->SetBinContent(ix, iy, raw);
       hs->GetHist2D("hist_weighted_yields")->SetBinContent(ix, iy, weighted);
+      hs->GetHist2D("hist_weighted_yields")->SetBinError(ix, iy, TMath::Sqrt(weighted_error));
     }
   }
 }
