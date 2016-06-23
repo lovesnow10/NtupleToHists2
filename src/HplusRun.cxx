@@ -55,8 +55,13 @@ bool HplusRun::initialize() {
 }
 
 bool HplusRun::run() {
-  std::vector<string> files = mDS->Next();
-  while (!files.empty()) {
+  //std::vector<string> files = mDS->Next();
+  int nSamples = mDS->GetNSamples();
+  //while (!files.empty()) {
+  std::vector<string> files;
+  for (int iSample = 0; iSample < nSamples; ++iSample) {
+    files = mDS->GetFiles(iSample);
+    if (files.empty()) continue;
     // Init general objs
     mWorker->Reset();
     mHelpWorker->Reset();
@@ -177,7 +182,7 @@ bool HplusRun::run() {
       mProcessed++;
     }
     // Point to next DataSet!
-    files = mDS->Next();
+    //files = mDS->Next();
   }
   return true;
 }

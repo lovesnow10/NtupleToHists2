@@ -47,6 +47,7 @@ public:
   const std::vector<string> GetAllTypes() { return mSampleTypesVec; };
   string GetSampleType(int nDS) {return mSampleTypeMap.at(nDS);};
   int GetSampleIndex() {return this->mCurrentDS - 1;};
+  int GetNSamples() {return mTotalDS;};
 };
 
 #endif
